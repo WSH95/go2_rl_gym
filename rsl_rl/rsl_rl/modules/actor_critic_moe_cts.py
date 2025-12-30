@@ -1,33 +1,13 @@
-# SPDX-FileCopyrightText: Copyright (c) 2021 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
-# SPDX-License-Identifier: BSD-3-Clause
-# 
-# Redistribution and use in source and binary forms, with or without
-# modification, are permitted provided that the following conditions are met:
-#
-# 1. Redistributions of source code must retain the above copyright notice, this
-# list of conditions and the following disclaimer.
-#
-# 2. Redistributions in binary form must reproduce the above copyright notice,
-# this list of conditions and the following disclaimer in the documentation
-# and/or other materials provided with the distribution.
-#
-# 3. Neither the name of the copyright holder nor the names of its
-# contributors may be used to endorse or promote products derived from
-# this software without specific prior written permission.
-#
-# THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
-# AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
-# IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
-# DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE
-# FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
-# DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR
-# SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
-# CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
-# OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
-# OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-#
-# Copyright (c) 2021 ETH Zurich, Nikita Rudin
-
+# -*- coding: utf-8 -*-
+'''
+@File    : actor_critic_moe_cts.py
+@Time    : 2025/12/30 21:06:46
+@Author  : wty-yy
+@Version : 1.0
+@Blog    : https://wty-yy.github.io/
+@Desc    : Mixture of Experts Concurrent Teacher Student Network
+@Refer   : CTS https://arxiv.org/abs/2405.10830, Switch Transformers https://arxiv.org/abs/2101.03961
+'''
 import numpy as np
 
 import torch
@@ -208,7 +188,7 @@ class StudentMoEEncoder(nn.Module):
         gating_dim,
         hidden_dims=[512, 256],
         expert_num=8,
-        expert_hidden_dim=128,
+        expert_hidden_dim=256,
         latent_dim=32,
         activation='elu',
         norm_type='l2norm',
@@ -231,7 +211,12 @@ class StudentMoEEncoder(nn.Module):
             nn.Linear(last_dim, expert_num * expert_hidden_dim),
             activation
         )
-        self.experts_out = nn.Linear(expert_hidden_dim, latent_dim)
+        self.experts_out = nn.Conv1d(
+             in_channels=expert_num*expert_hidden_dim,
+             out_channels=expert_num*latent_dim,
+             kernel_size=1,
+             groups=expert_num
+        )
 
         # Gating network
         gating_layers = []
@@ -248,8 +233,9 @@ class StudentMoEEncoder(nn.Module):
         weights = self.gating_network(obs)  # (batch, expert_num)
         shared_features = self.experts_backbone(obs_no_goal)
         expert_hidden = self.experts_hidden(shared_features)
-        expert_hidden = expert_hidden.view(-1, self.expert_num, expert_hidden.shape[-1] // self.expert_num)
-        expert_latent = self.experts_out(expert_hidden)  # (batch, expert_num, latent_dim)
+        expert_hidden = expert_hidden.unsqueeze(-1)
+        expert_latent_flat = self.experts_out(expert_hidden)  # (batch, expert_num * latent_dim, 1)
+        expert_latent = expert_latent_flat.reshape(-1, self.expert_num, self.latent_dim)
         latent = torch.sum(weights.unsqueeze(-1) * expert_latent, dim=1)  # (batch, latent_dim)
         latent = self.norm_layer(latent)
         return latent, weights

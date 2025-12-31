@@ -183,6 +183,9 @@ class _OnnxPolicyExporter(torch.nn.Module):
             self.history_length = policy.history.shape[1]
             self.forward = self.forward_moe_cts
             self.input_dim = self.history_length * policy.history.shape[2]
+        
+        else:  # PPO
+            self.forward = self.forward_ppo
             
         if hasattr(policy, "actor"):
             self.actor = copy.deepcopy(policy.actor)
@@ -198,8 +201,7 @@ class _OnnxPolicyExporter(torch.nn.Module):
         else:
             raise ValueError("Policy does not have an actor/student module.")
 
-    def forward_cts(self, x):  # x is stack observations by terms
-        x = self.normalizer(x)
+    def flatten_obs(self, x):  # flatten stack obs by terms to stack by step frames
         term_dims = [3, 3, 3, self.num_actions, self.num_actions, self.num_actions]
         obs_dim = sum(term_dims)
         if x.shape[1] % obs_dim != 0:
@@ -223,6 +225,17 @@ class _OnnxPolicyExporter(torch.nn.Module):
             history_by_frame.append(torch.cat(terms_for_this_frame, dim=1))
         # [B, (Frame0_AllTerms), (Frame1_AllTerms), ...]
         history = torch.cat(history_by_frame, dim=1)
+        return history, obs_dim
+    
+    def forward_ppo(self, x):  # x is stack observations by terms
+        x = self.normalizer(x)
+        history, obs_dim = self.flatten_obs(x)
+        last_obs = history[:, -obs_dim:]
+        return self.actor(last_obs)
+
+    def forward_cts(self, x):  # x is stack observations by terms
+        x = self.normalizer(x)
+        history, obs_dim = self.flatten_obs(x)
 
         last_obs = history[:, -obs_dim:]
         latent = self.student_encoder(history)
@@ -232,29 +245,7 @@ class _OnnxPolicyExporter(torch.nn.Module):
 
     def forward_moe_cts(self, x):
         x = self.normalizer(x)
-        term_dims = [3, 3, 3, self.num_actions, self.num_actions, self.num_actions]
-        obs_dim = sum(term_dims)
-        if x.shape[1] % obs_dim != 0:
-            raise ValueError(f"x.shape[1] ({x.shape[1]}) 不是 obs_dim ({obs_dim}) 的整数倍")
-            
-        frames = x.shape[1] // obs_dim
-        split_sizes = [dim * frames for dim in term_dims]
-        # [B, dim0*frames], [B, dim1*frames], ...
-        term_chunks = torch.split(x, split_sizes, dim=1)
-
-        # [ [B, frames, dim0], [B, frames, dim1], ... ]
-        frame_terms_reshaped = [
-            chunk.view(-1, frames, dim) 
-            for chunk, dim in zip(term_chunks, term_dims)
-        ]
-
-        history_by_frame = []
-        for i in range(frames):
-            # [ [B, dim0], [B, dim1], ... ]
-            terms_for_this_frame = [ftr[:, i, :] for ftr in frame_terms_reshaped]
-            history_by_frame.append(torch.cat(terms_for_this_frame, dim=1))
-        # [B, (Frame0_AllTerms), (Frame1_AllTerms), ...]
-        history = torch.cat(history_by_frame, dim=1)
+        history, obs_dim = self.flatten_obs(x)
 
         last_obs = history[:, -obs_dim:]
         history_3d = history.view(-1, self.history_length, obs_dim)
@@ -267,25 +258,11 @@ class _OnnxPolicyExporter(torch.nn.Module):
     
     def forward_mcp_cts(self, x):
         x = self.normalizer(x)
-        term_dims = [3, 3, 3, self.num_actions, self.num_actions, self.num_actions]
-        obs_dim = sum(term_dims)
-        frames = x.shape[1] // obs_dim
-        
-        split_sizes = [dim * frames for dim in term_dims]
-        term_chunks = torch.split(x, split_sizes, dim=1)
-        frame_terms_reshaped = [chunk.view(-1, frames, dim) for chunk, dim in zip(term_chunks, term_dims)]
-        history_by_frame = []
-        for i in range(frames):
-            terms_for_this_frame = [ftr[:, i, :] for ftr in frame_terms_reshaped]
-            history_by_frame.append(torch.cat(terms_for_this_frame, dim=1))
-        history = torch.cat(history_by_frame, dim=1)
+        history, obs_dim = self.flatten_obs(x)
 
         last_obs = history[:, -obs_dim:]
-        
         obs_no_goal = last_obs[:, self.obs_no_goal_mask]
-        
         latent = self.student_encoder(history)
-        
         x_in = torch.cat([latent, last_obs], dim=1)
         x_no_goal_in = torch.cat([latent, obs_no_goal], dim=1)
         

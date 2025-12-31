@@ -45,7 +45,6 @@ import numpy as np
 from pathlib import Path
 from legged_gym.utils.helpers import class_to_dict
 from typing import Union
-from robogauge.scripts.client import RoboGaugeClient
 from legged_gym.utils.exporter import export_policy_as_jit
 
 def numpy_representer(dumper, data):
@@ -112,7 +111,11 @@ class OnPolicyRunnerCTS:
             yaml.safe_dump(all_cfg, open(os.path.join(self.log_dir, 'config.yaml'), 'w'))
         
         # robogauge client
-        self.robogauge_client = RoboGaugeClient()
+        try:
+            from robogauge.scripts.client import RoboGaugeClient
+            self.robogauge_client = RoboGaugeClient()
+        except:
+            self.robogauge_client = None
     
     def learn(self, num_learning_iterations, init_at_random_ep_len=False):
         # initialize writer
@@ -188,7 +191,7 @@ class OnPolicyRunnerCTS:
                 self.save(os.path.join(self.log_dir, 'model_{}.pt'.format(it)), it)
             ep_infos.clear()
         
-        self.save(os.path.join(self.log_dir, 'model_{}.pt'.format(self.current_learning_iteration)))
+        self.save(os.path.join(self.log_dir, 'model_{}.pt'.format(self.current_learning_iteration)), it)
 
     def log(self, locs, width=80, pad=35):
         self.tot_timesteps += self.num_steps_per_env * self.env.num_envs
@@ -280,6 +283,9 @@ class OnPolicyRunnerCTS:
         self.update_robogauge(it)
     
     def update_robogauge(self, it):
+        if self.robogauge_client is None:
+            return
+
         if it % 500 == 0:
             # export jit model
             jit_dir = os.path.join(self.log_dir, 'jit_models')

@@ -32,6 +32,7 @@ import time
 import os
 from collections import deque
 import statistics
+import yaml
 
 from torch.utils.tensorboard import SummaryWriter
 import torch
@@ -39,6 +40,7 @@ import torch
 from rsl_rl.algorithms import PPO
 from rsl_rl.modules import ActorCritic, ActorCriticRecurrent
 from rsl_rl.env import VecEnv
+from legged_gym.utils.exporter import export_policy_as_jit
 
 
 class OnPolicyRunner:
@@ -79,6 +81,13 @@ class OnPolicyRunner:
         self.current_learning_iteration = 0
 
         _, _ = self.env.reset()
+
+        # robogauge client
+        try:
+            from robogauge.scripts.client import RoboGaugeClient
+            self.robogauge_client = RoboGaugeClient()
+        except:
+            self.robogauge_client = None
     
     def learn(self, num_learning_iterations, init_at_random_ep_len=False):
         # initialize writer
@@ -135,11 +144,11 @@ class OnPolicyRunner:
             if self.log_dir is not None:
                 self.log(locals())
             if it % self.save_interval == 0:
-                self.save(os.path.join(self.log_dir, 'model_{}.pt'.format(it)))
+                self.save(os.path.join(self.log_dir, 'model_{}.pt'.format(it)), it)
             ep_infos.clear()
         
         self.current_learning_iteration += num_learning_iterations
-        self.save(os.path.join(self.log_dir, 'model_{}.pt'.format(self.current_learning_iteration)))
+        self.save(os.path.join(self.log_dir, 'model_{}.pt'.format(self.current_learning_iteration)), it)
 
     def log(self, locs, width=80, pad=35):
         self.tot_timesteps += self.num_steps_per_env * self.env.num_envs
@@ -210,13 +219,43 @@ class OnPolicyRunner:
                                locs['num_learning_iterations'] - locs['it']):.1f}s\n""")
         print(log_string)
 
-    def save(self, path, infos=None):
+    def save(self, path, it, infos=None):
         torch.save({
             'model_state_dict': self.alg.actor_critic.state_dict(),
             'optimizer_state_dict': self.alg.optimizer.state_dict(),
             'iter': self.current_learning_iteration,
             'infos': infos,
             }, path)
+        self.update_robogauge(it)
+
+    def update_robogauge(self, it):
+        if self.robogauge_client is None:
+            return
+
+        if it % 500 == 0:
+            # export jit model
+            jit_dir = os.path.join(self.log_dir, 'jit_models')
+            jit_path = os.path.join(jit_dir, f'policy_jit_{it}.pt')
+            export_policy_as_jit(self.alg.actor_critic, jit_dir, filename=f'policy_jit_{it}.pt')
+            # upload to robogauge
+            task_name = 'go2'
+            self.robogauge_client.submit_task(
+                model_path=jit_path,
+                step=it,
+                task_name=task_name,
+                experiment_name=self.cfg["experiment_name"]
+            )
+        self.robogauge_client.monitor_tasks()
+        results_dir = os.path.join(self.log_dir, 'robogauge_results')
+        os.makedirs(results_dir, exist_ok=True)
+        for task_id, resp in self.robogauge_client.response_data.items():
+            scores = resp['results']['scores']
+            step = resp['step']
+            for key, val in scores.items():
+                self.writer.add_scalar(f'RoboGauge/{key}', val, step)
+            results_path = os.path.join(results_dir, f'results_{step}.yaml')
+            with open(results_path, 'w', encoding='utf-8') as f:
+                yaml.dump(resp['results'], f, allow_unicode=True, sort_keys=False)
 
     def load(self, path, load_optimizer=True):
         loaded_dict = torch.load(path)

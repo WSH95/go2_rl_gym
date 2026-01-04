@@ -292,9 +292,7 @@ class OnPolicyRunnerCTS:
             jit_path = os.path.join(jit_dir, f'policy_jit_{it}.pt')
             export_policy_as_jit(self.alg.model, jit_dir, filename=f'policy_jit_{it}.pt')
             # upload to robogauge
-            task_name = 'go2'
-            if 'moe' in self.cfg["algorithm_class_name"].lower() or 'mcp' in self.cfg["algorithm_class_name"].lower():
-                task_name = 'go2_moe'
+            task_name = 'go2_moe'  # Both cts, moe-cts actor return a tuple `action, (latent, ...)`
             self.robogauge_client.submit_task(
                 model_path=jit_path,
                 step=it,

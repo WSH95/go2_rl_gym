@@ -1,3 +1,7 @@
+# 20260104
+## v0.1.3
+1. 修改moe-cts的torch script输出为`action, (weights, latent)`形式, cts输出为`action, (None, latent)`
+2. 将cts,moe-cts的robogauge评测task都改为`go2_moe`
 # 20251231
 ## v0.1.2
 1. 加入PPO的Robogauge评估

@@ -1,3 +1,6 @@
+# 20260105
+## v0.1.4
+1. `legged_gym/utils/terrain.py`加入地形难度选择默认`IS_HARD=True`
 # 20260104
 ## v0.1.3
 1. 修改moe-cts的torch script输出为`action, (weights, latent)`形式, cts输出为`action, (None, latent)`

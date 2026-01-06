@@ -198,7 +198,7 @@ class ActorMCP(nn.Module):
         gating_layers.append(nn.Sigmoid())
         self.gating_network = nn.Sequential(*gating_layers)
 
-        # Expert networks
+        # Expert networks (Share backbone version)
         expert_layers = []
         last_dim = input_dim_no_goal
         for l in hidden_dims:

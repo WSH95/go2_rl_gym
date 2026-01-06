@@ -33,3 +33,4 @@ from .actor_critic_recurrent import ActorCriticRecurrent
 from .actor_critic_cts import ActorCriticCTS
 from .actor_critic_moe_cts import ActorCriticMoECTS
 from .actor_critic_mcp_cts import ActorCriticMCPCTS
+from .actor_critic_ac_moe_cts import ActorCriticACMoECTS

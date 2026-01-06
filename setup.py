@@ -2,7 +2,7 @@ from setuptools import find_packages
 from distutils.core import setup
 
 setup(name='go2_rl_gym',
-      version='0.1.4',
+      version='0.1.5',
       author='Wu Tianyang',
       license="MIT",
       packages=find_packages(),
@@ -13,7 +13,8 @@ setup(name='go2_rl_gym',
             'rsl-rl',
             'matplotlib',
             'numpy==1.20',
-            'tensorboard',
+            'tensorboard==2.14.0',
+            'google-auth==2.45.0',
             'mujoco==3.2.3',
             'pyyaml',
             'onnx==1.17.0',

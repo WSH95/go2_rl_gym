@@ -36,8 +36,8 @@ import statistics
 from torch.utils.tensorboard import SummaryWriter
 import torch
 
-from rsl_rl.algorithms import CTS, MoECTS, MCPCTS
-from rsl_rl.modules import ActorCriticCTS, ActorCriticMoECTS, ActorCriticMCPCTS
+from rsl_rl.algorithms import CTS, MoECTS, MCPCTS, ACMoECTS
+from rsl_rl.modules import ActorCriticCTS, ActorCriticMoECTS, ActorCriticMCPCTS, ActorCriticACMoECTS
 from rsl_rl.env import VecEnv
 
 import yaml
@@ -79,7 +79,7 @@ class OnPolicyRunnerCTS:
             num_critic_obs = self.env.num_obs
         history_length = train_cfg["history_length"]
         actor_critic_class = eval(self.cfg["policy_class_name"])
-        model: Union[ActorCriticCTS, ActorCriticMoECTS, ActorCriticMCPCTS] = actor_critic_class(
+        model: Union[ActorCriticCTS, ActorCriticMoECTS, ActorCriticMCPCTS, ActorCriticACMoECTS] = actor_critic_class(
             self.env.num_obs,
             num_critic_obs,
             self.env.num_actions,
@@ -87,7 +87,7 @@ class OnPolicyRunnerCTS:
             history_length,
             **self.policy_cfg).to(self.device)
         alg_class = eval(self.cfg["algorithm_class_name"])
-        self.alg: Union[CTS, MoECTS, MCPCTS] = alg_class(model, self.env.num_envs, history_length, device=self.device, **self.alg_cfg)
+        self.alg: Union[CTS, MoECTS, MCPCTS, ACMoECTS] = alg_class(model, self.env.num_envs, history_length, device=self.device, **self.alg_cfg)
         self.num_steps_per_env = self.cfg["num_steps_per_env"]
         self.save_interval = self.cfg["save_interval"]
 
@@ -176,11 +176,14 @@ class OnPolicyRunnerCTS:
 
                 # Learning step
                 start = stop
-                self.alg.compute_returns(privileged_obs, self.history.flatten(1))
+                if self.cfg["algorithm_class_name"] == "ACMoECTS":
+                    self.alg.compute_returns(obs, privileged_obs, self.history.flatten(1))
+                else:
+                    self.alg.compute_returns(privileged_obs, self.history.flatten(1))
             
             if self.cfg["algorithm_class_name"] in ["CTS", "MCPCTS"]:
                 mean_value_loss, mean_surrogate_loss, mean_entropy_loss, mean_latent_loss = self.alg.update()
-            elif self.cfg["algorithm_class_name"] == "MoECTS":
+            elif self.cfg["algorithm_class_name"] in ["MoECTS", "ACMoECTS"]:
                 mean_value_loss, mean_surrogate_loss, mean_entropy_loss, mean_latent_loss, mean_load_balance_loss = self.alg.update()
             stop = time.time()
             learn_time = stop - start

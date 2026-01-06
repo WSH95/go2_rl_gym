@@ -368,3 +368,11 @@ class LeggedRobotCfgMCPCTS(LeggedRobotCfgCTS):
     class runner(LeggedRobotCfgCTS.runner):
         policy_class_name = 'ActorCriticMCPCTS'
         algorithm_class_name = 'MCPCTS'
+
+class LeggedRobotCfgACMoECTS(LeggedRobotCfgCTS):
+    class policy(LeggedRobotCfgCTS.policy):
+        expert_num = 8 # number of experts in the student model
+
+    class runner(LeggedRobotCfgCTS.runner):
+        policy_class_name = 'ActorCriticACMoECTS'
+        algorithm_class_name = 'ACMoECTS'

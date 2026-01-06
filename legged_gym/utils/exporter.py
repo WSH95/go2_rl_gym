@@ -85,6 +85,9 @@ class _TorchPolicyExporter(torch.nn.Module):
             self.actor = copy.deepcopy(policy.actor_mcp)
             self.obs_no_goal_mask = copy.deepcopy(policy.obs_no_goal_mask).cpu()
             self.forward = self.forward_mcp_cts
+        elif hasattr(policy, "actor_moe"):
+            self.actor = copy.deepcopy(policy.actor_moe)
+            self.forward = self.forward_ac_moe
         elif hasattr(policy, "actor"):
             self.actor = copy.deepcopy(policy.actor)
             if self.is_recurrent:
@@ -143,6 +146,14 @@ class _TorchPolicyExporter(torch.nn.Module):
         x_no_goal = torch.cat([latent, x_no_goal], dim=1)
         mean_action, _, weights = self.actor(x, x_no_goal)
         return mean_action, (weights, latent)
+
+    def forward_ac_moe(self, x):  # x is single observations
+        x = self.normalizer(x)
+        self.history = torch.cat([self.history[:, 1:], x.unsqueeze(1)], dim=1)
+        latent = self.student_encoder(self.history.flatten(1))
+        x = torch.cat([latent, x], dim=1)
+        mean, weights = self.actor(x)
+        return mean, (weights, latent)
 
     @torch.jit.export
     def reset(self):

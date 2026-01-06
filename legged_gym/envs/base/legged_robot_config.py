@@ -376,3 +376,12 @@ class LeggedRobotCfgACMoECTS(LeggedRobotCfgCTS):
     class runner(LeggedRobotCfgCTS.runner):
         policy_class_name = 'ActorCriticACMoECTS'
         algorithm_class_name = 'ACMoECTS'
+
+class LeggedRobotCfgDualMoECTS(LeggedRobotCfgCTS):
+    class policy(LeggedRobotCfgCTS.policy):
+        expert_num = 8 # number of experts in the student model
+        student_encoder_hidden_dims = [512, 256, 128]
+
+    class runner(LeggedRobotCfgCTS.runner):
+        policy_class_name = 'ActorCriticDualMoECTS'
+        algorithm_class_name = 'DualMoECTS'

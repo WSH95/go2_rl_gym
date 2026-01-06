@@ -33,3 +33,4 @@ from .cts import CTS
 from .moe_cts import MoECTS
 from .mcp_cts import MCPCTS
 from .ac_moe_cts import ACMoECTS
+from .dual_moe_cts import DualMoECTS

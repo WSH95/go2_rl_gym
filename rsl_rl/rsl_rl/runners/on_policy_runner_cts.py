@@ -36,8 +36,8 @@ import statistics
 from torch.utils.tensorboard import SummaryWriter
 import torch
 
-from rsl_rl.algorithms import CTS, MoECTS, MCPCTS, ACMoECTS
-from rsl_rl.modules import ActorCriticCTS, ActorCriticMoECTS, ActorCriticMCPCTS, ActorCriticACMoECTS
+from rsl_rl.algorithms import CTS, MoECTS, MCPCTS, ACMoECTS, DualMoECTS
+from rsl_rl.modules import ActorCriticCTS, ActorCriticMoECTS, ActorCriticMCPCTS, ActorCriticACMoECTS, ActorCriticDualMoECTS
 from rsl_rl.env import VecEnv
 
 import yaml
@@ -79,7 +79,7 @@ class OnPolicyRunnerCTS:
             num_critic_obs = self.env.num_obs
         history_length = train_cfg["history_length"]
         actor_critic_class = eval(self.cfg["policy_class_name"])
-        model: Union[ActorCriticCTS, ActorCriticMoECTS, ActorCriticMCPCTS, ActorCriticACMoECTS] = actor_critic_class(
+        model: Union[ActorCriticCTS, ActorCriticMoECTS, ActorCriticMCPCTS, ActorCriticACMoECTS, ActorCriticDualMoECTS] = actor_critic_class(
             self.env.num_obs,
             num_critic_obs,
             self.env.num_actions,
@@ -87,7 +87,7 @@ class OnPolicyRunnerCTS:
             history_length,
             **self.policy_cfg).to(self.device)
         alg_class = eval(self.cfg["algorithm_class_name"])
-        self.alg: Union[CTS, MoECTS, MCPCTS, ACMoECTS] = alg_class(model, self.env.num_envs, history_length, device=self.device, **self.alg_cfg)
+        self.alg: Union[CTS, MoECTS, MCPCTS, ACMoECTS, DualMoECTS] = alg_class(model, self.env.num_envs, history_length, device=self.device, **self.alg_cfg)
         self.num_steps_per_env = self.cfg["num_steps_per_env"]
         self.save_interval = self.cfg["save_interval"]
 
@@ -113,7 +113,7 @@ class OnPolicyRunnerCTS:
         # robogauge client
         try:
             from robogauge.scripts.client import RoboGaugeClient
-            self.robogauge_client = RoboGaugeClient()
+            self.robogauge_client = RoboGaugeClient("http://127.0.0.1:9973")  # Change PORT to your server port if needed, default is 9973
         except:
             self.robogauge_client = None
     
@@ -176,7 +176,7 @@ class OnPolicyRunnerCTS:
 
                 # Learning step
                 start = stop
-                if self.cfg["algorithm_class_name"] == "ACMoECTS":
+                if self.cfg["algorithm_class_name"] in ["ACMoECTS", "DualMoECTS"]:
                     self.alg.compute_returns(obs, privileged_obs, self.history.flatten(1))
                 else:
                     self.alg.compute_returns(privileged_obs, self.history.flatten(1))
@@ -185,6 +185,8 @@ class OnPolicyRunnerCTS:
                 mean_value_loss, mean_surrogate_loss, mean_entropy_loss, mean_latent_loss = self.alg.update()
             elif self.cfg["algorithm_class_name"] in ["MoECTS", "ACMoECTS"]:
                 mean_value_loss, mean_surrogate_loss, mean_entropy_loss, mean_latent_loss, mean_load_balance_loss = self.alg.update()
+            elif self.cfg["algorithm_class_name"] == "DualMoECTS":
+                mean_value_loss, mean_surrogate_loss, mean_entropy_loss, mean_latent_loss, mean_load_balance_loss, mean_actor_load_balance_loss = self.alg.update()
             stop = time.time()
             learn_time = stop - start
             self.current_learning_iteration += 1
@@ -228,6 +230,8 @@ class OnPolicyRunnerCTS:
         self.writer.add_scalar('Loss/latent', locs['mean_latent_loss'], locs['it'])
         if 'mean_load_balance_loss' in locs:
             self.writer.add_scalar('Loss/load_balance', locs['mean_load_balance_loss'], locs['it'])
+        if 'mean_actor_load_balance_loss' in locs:
+            self.writer.add_scalar('Loss/actor_load_balance', locs['mean_actor_load_balance_loss'], locs['it'])
         self.writer.add_scalar('Loss/learning_rate', self.alg.learning_rate, locs['it'])
         if 'mcp' not in self.cfg["algorithm_class_name"].lower():
             self.writer.add_scalar('Policy/mean_noise_std', mean_std.item(), locs['it'])
@@ -257,6 +261,8 @@ class OnPolicyRunnerCTS:
                       f"""{'Latent loss:':>{pad}} {locs['mean_latent_loss']:.4f}\n""")
         if 'mean_load_balance_loss' in locs:
             log_string += f"""{'Load balance loss:':>{pad}} {locs['mean_load_balance_loss']:.4f}\n"""
+        if 'mean_actor_load_balance_loss' in locs:
+            log_string += f"""{'Actor load balance loss:':>{pad}} {locs['mean_actor_load_balance_loss']:.4f}\n"""
         if 'mcp' not in self.cfg["algorithm_class_name"].lower():
             log_string += f"""{'Mean action noise std:':>{pad}} {mean_std.item():.2f}\n"""
         if len(locs['teacher_rewbuffer']):

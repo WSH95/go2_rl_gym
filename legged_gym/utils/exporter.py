@@ -77,7 +77,8 @@ class _TorchPolicyExporter(torch.nn.Module):
             self.forward = self.forward_cts
         if hasattr(policy, "student_moe_encoder"):
             self.student_moe_encoder = copy.deepcopy(policy.student_moe_encoder).cpu()
-            self.obs_no_goal_mask = copy.deepcopy(policy.obs_no_goal_mask).cpu()
+            if hasattr(policy, "obs_no_goal_mask"):
+                self.obs_no_goal_mask = copy.deepcopy(policy.obs_no_goal_mask).cpu()
             self.history_length = policy.history.shape[1]
             self.history = torch.zeros([1, policy.history.shape[1], policy.history.shape[2]], device='cpu')
             self.forward = self.forward_moe_cts
@@ -98,6 +99,8 @@ class _TorchPolicyExporter(torch.nn.Module):
                 self.rnn = copy.deepcopy(policy.memory_s.rnn)
         else:
             raise ValueError("Policy does not have an actor/student module.")
+        if hasattr(policy, "student_moe_encoder") and hasattr(policy, "actor_moe"):
+            self.forward = self.forward_dual_moe_cts
         # set up recurrent network
         if self.is_recurrent:
             self.rnn.cpu()
@@ -154,6 +157,14 @@ class _TorchPolicyExporter(torch.nn.Module):
         x = torch.cat([latent, x], dim=1)
         mean, weights = self.actor(x)
         return mean, (weights, latent)
+
+    def forward_dual_moe_cts(self, x):  # x is single observations
+        x = self.normalizer(x)
+        self.history = torch.cat([self.history[:, 1:], x.unsqueeze(1)], dim=1)
+        latent, student_weights = self.student_moe_encoder(self.history.flatten(1))
+        x = torch.cat([latent, x], dim=1)
+        mean, actor_weights = self.actor(x)
+        return mean, (student_weights, actor_weights, latent)
 
     @torch.jit.export
     def reset(self):

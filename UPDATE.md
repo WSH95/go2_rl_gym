@@ -1,6 +1,7 @@
 # 20260106
 ## v0.1.5
 1. 加入`go2_ac_moe_cts`, 参考MoELoco将MoE加载Actor-Critic上, 使用非共享权重和全goal输入
+2. 加入`go2_dual_moe_cts`, student和actor都使用MoE结构, 使用非共享权重和全goal输入
 # 20260105
 ## v0.1.4
 1. `legged_gym/utils/terrain.py`加入地形难度选择默认`IS_HARD=True`

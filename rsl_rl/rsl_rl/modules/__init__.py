@@ -34,3 +34,4 @@ from .actor_critic_cts import ActorCriticCTS
 from .actor_critic_moe_cts import ActorCriticMoECTS
 from .actor_critic_mcp_cts import ActorCriticMCPCTS
 from .actor_critic_ac_moe_cts import ActorCriticACMoECTS
+from .actor_critic_dual_moe_cts import ActorCriticDualMoECTS

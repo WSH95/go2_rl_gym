@@ -221,7 +221,7 @@ class LeggedRobot(BaseTask):
         self.episode_length_buf[env_ids] = 0
         self.reset_buf[env_ids] = 1
         self.commands_resampling_step[env_ids] = self.cfg.commands.resampling_time / self.dt
-        self.commands_xy_accummulation[env_ids] = 0.0
+        self.commands_xy_accumulation[env_ids] = 0.0
         if self.cfg.commands.curriculum:
             self.update_command_curriculum(env_ids)
         self._resample_commands(env_ids)
@@ -442,36 +442,47 @@ class LeggedRobot(BaseTask):
                     self.cfg.commands.command_range_curriculum.pop(i)
                     self._update_env_command_ranges()
                     print(f"Command range updated at iter {current_iter}: {self.command_ranges}")
-        # 到达边界0.625倍宽度的剩余距离
-        remaining_dist = torch.clip(0.625 * self.cfg.terrain.terrain_length - torch.norm(self.commands_xy_accummulation[env_ids], dim=1) * self.cfg.commands.resampling_time, 0.0)
-        if ((self.max_episode_length - self.episode_length_buf[env_ids]) == 0).any():
-            raise ValueError("Some envs have zero remaining episode length during command resampling")
-        vel_low_bound = torch.clip(remaining_dist / ((self.max_episode_length - self.episode_length_buf[env_ids] + 1e-9) * self.dt), 0.0)
-        self.commands[env_ids, 0] = sample_disjoint_intervals(
-            env_ids,
-            vel_low_bound,
-            self.env_command_ranges["lin_vel_x"][env_ids, 0],
-            self.env_command_ranges["lin_vel_x"][env_ids, 1],
-            self.device
-        )
-        self.commands[env_ids, 1] = sample_disjoint_intervals(
-            env_ids,
-            vel_low_bound,
-            self.env_command_ranges["lin_vel_y"][env_ids, 0],
-            self.env_command_ranges["lin_vel_y"][env_ids, 1],
-            self.device
-        )
-        if self.cfg.commands.heading_command:
-            r = torch.rand(len(env_ids), device=self.device)
-            lower = self.env_command_ranges["heading"][env_ids, 0]
-            upper = self.env_command_ranges["heading"][env_ids, 1]
-            self.commands[env_ids, 3] = (upper - lower) * r + lower
+        remaining_dist = torch.clip(0.625 * self.cfg.terrain.terrain_length - torch.norm(self.commands_xy_accumulation[env_ids], dim=1) * self.cfg.commands.resampling_time, 0.0)
+        if self.cfg.commands.dynamic_resample_commands:
+            # arrive at boundary 0.625 times the width of the remaining distance
+            if ((self.max_episode_length - self.episode_length_buf[env_ids]) == 0).any():
+                raise ValueError("Some envs have zero remaining episode length during command resampling")
+            vel_low_bound = torch.clip(remaining_dist / ((self.max_episode_length - self.episode_length_buf[env_ids] + 1e-9) * self.dt), 0.0)
+            self.commands[env_ids, 0] = sample_disjoint_intervals(
+                env_ids,
+                vel_low_bound,
+                self.env_command_ranges["lin_vel_x"][env_ids, 0],
+                self.env_command_ranges["lin_vel_x"][env_ids, 1],
+                self.device
+            )
+            self.commands[env_ids, 1] = sample_disjoint_intervals(
+                env_ids,
+                vel_low_bound,
+                self.env_command_ranges["lin_vel_y"][env_ids, 0],
+                self.env_command_ranges["lin_vel_y"][env_ids, 1],
+                self.device
+            )
+            if self.cfg.commands.heading_command:
+                r = torch.rand(len(env_ids), device=self.device)
+                lower = self.env_command_ranges["heading"][env_ids, 0]
+                upper = self.env_command_ranges["heading"][env_ids, 1]
+                self.commands[env_ids, 3] = (upper - lower) * r + lower
+            else:
+                r = torch.rand(len(env_ids), device=self.device)
+                lower = self.env_command_ranges["ang_vel_yaw"][env_ids, 0]
+                upper = self.env_command_ranges["ang_vel_yaw"][env_ids, 1]
+                self.commands[env_ids, 2] = (upper - lower) * r + lower
+            self.commands_resampling_step[env_ids] = self.cfg.commands.resampling_time / self.dt
         else:
-            r = torch.rand(len(env_ids), device=self.device)
-            lower = self.env_command_ranges["ang_vel_yaw"][env_ids, 0]
-            upper = self.env_command_ranges["ang_vel_yaw"][env_ids, 1]
-            self.commands[env_ids, 2] = (upper - lower) * r + lower
-        self.commands_resampling_step[env_ids] = self.cfg.commands.resampling_time / self.dt
+            self.commands[env_ids, 0] = torch_rand_float(self.command_ranges["lin_vel_x"][0], self.command_ranges["lin_vel_x"][1], (len(env_ids), 1), device=self.device).squeeze(1)
+            self.commands[env_ids, 1] = torch_rand_float(self.command_ranges["lin_vel_y"][0], self.command_ranges["lin_vel_y"][1], (len(env_ids), 1), device=self.device).squeeze(1)
+            if self.cfg.commands.heading_command:
+                self.commands[env_ids, 3] = torch_rand_float(self.command_ranges["heading"][0], self.command_ranges["heading"][1], (len(env_ids), 1), device=self.device).squeeze(1)
+            else:
+                self.commands[env_ids, 2] = torch_rand_float(self.command_ranges["ang_vel_yaw"][0], self.command_ranges["ang_vel_yaw"][1], (len(env_ids), 1), device=self.device).squeeze(1)
+
+            # set small commands to zero
+            self.commands[env_ids, :2] *= (torch.norm(self.commands[env_ids, :2], dim=1) > 0.2).unsqueeze(1)
 
         # set small commands to zero
         # self.commands[env_ids, :2] *= (torch.norm(self.commands[env_ids, :2], dim=1) > 0.2).unsqueeze(1)
@@ -559,7 +570,7 @@ class LeggedRobot(BaseTask):
             self.commands[zero_env_ids, :3] = 0.0
             self.stop_heading[zero_env_ids] = True
 
-        self.commands_xy_accummulation[env_ids] += self.commands[env_ids, :2]
+        self.commands_xy_accumulation[env_ids] += self.commands[env_ids, :2]
 
     def _compute_torques(self, actions):
         """ Compute torques from actions.
@@ -782,7 +793,7 @@ class LeggedRobot(BaseTask):
         self.commands = torch.zeros(self.num_envs, self.cfg.commands.num_commands, dtype=torch.float, device=self.device, requires_grad=False) # x vel, y vel, yaw vel, heading
         self.commands_scale = torch.tensor([self.obs_scales.lin_vel, self.obs_scales.lin_vel, self.obs_scales.ang_vel], device=self.device, requires_grad=False,) # TODO change this
         self.commands_resampling_step = torch.zeros(self.num_envs, dtype=torch.float, device=self.device, requires_grad=False)
-        self.commands_xy_accummulation = torch.zeros(self.num_envs, 2, dtype=torch.float, device=self.device, requires_grad=False)
+        self.commands_xy_accumulation = torch.zeros(self.num_envs, 2, dtype=torch.float, device=self.device, requires_grad=False)
         self.zero_command_proba = 0.0
         self.feet_air_time = torch.zeros(self.num_envs, self.feet_indices.shape[0], dtype=torch.float, device=self.device, requires_grad=False)
         self.last_contacts = torch.zeros(self.num_envs, len(self.feet_indices), dtype=torch.bool, device=self.device, requires_grad=False)
@@ -1118,9 +1129,11 @@ class LeggedRobot(BaseTask):
         distance = self.max_move_distance[env_ids]
         # robots that walked far enough progress to harder terains
         move_up = distance > self.terrain.env_length / 2
-        # robots that walked less than half of their required distance go to simpler terrains
-        # move_down = (distance < torch.norm(self.commands[env_ids, :2], dim=1) * self.max_episode_length_s * 0.5) * ~move_up
-        move_down = (distance < torch.norm(self.commands_xy_accummulation[env_ids], dim=1) * (self.cfg.commands.resampling_time * (1 - self.zero_command_proba)) * 0.5) * ~move_up
+        if self.cfg.terrain.move_down_by_acuumulated_xy_command:
+            move_down = (distance < torch.norm(self.commands_xy_accumulation[env_ids], dim=1) * (self.cfg.commands.resampling_time * (1 - self.zero_command_proba)) * 0.5) * ~move_up
+        else:
+            # robots that walked less than half of their required distance go to simpler terrains
+            move_down = (distance < torch.norm(self.commands[env_ids, :2], dim=1) * self.max_episode_length_s * 0.5) * ~move_up
         
         self.terrain_levels[env_ids] += 1 * move_up - 1 * move_down
         # Robots that solve the last level are sent to a random one

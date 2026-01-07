@@ -1,3 +1,6 @@
+# 20260107
+## v0.1.6
+1. 加入`go2_rem_cts`, student使用MoE结构, teacher使用普通CTS, 使用非共享权重和全goal输入
 # 20260106
 ## v0.1.5
 1. 加入`go2_ac_moe_cts`, 参考MoELoco将MoE加载Actor-Critic上, 使用非共享权重和全goal输入

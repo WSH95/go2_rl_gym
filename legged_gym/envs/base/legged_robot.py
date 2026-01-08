@@ -830,10 +830,10 @@ class LeggedRobot(BaseTask):
         self.last_robot_props_update_step = torch.zeros(self.num_envs, dtype=torch.long, device=self.device, requires_grad=False)
         self.turn_over_timer = torch.zeros(self.num_envs, dtype=torch.float, device=self.device, requires_grad=False)
         self.env_command_ranges = {
-            'lin_vel_x': torch.zeros((self.num_envs, 2), dtype=torch.float, device=self.device, requires_grad=False),
-            'lin_vel_y': torch.zeros((self.num_envs, 2), dtype=torch.float, device=self.device, requires_grad=False),
-            'ang_vel_yaw': torch.zeros((self.num_envs, 2), dtype=torch.float, device=self.device, requires_grad=False),
-            'heading': torch.zeros((self.num_envs, 2), dtype=torch.float, device=self.device, requires_grad=False),
+            'lin_vel_x': torch.tensor(self.command_ranges['lin_vel_x'], device=self.device, requires_grad=False).repeat(self.num_envs, 1),
+            'lin_vel_y': torch.tensor(self.command_ranges['lin_vel_y'], device=self.device, requires_grad=False).repeat(self.num_envs, 1),
+            'ang_vel_yaw': torch.tensor(self.command_ranges['ang_vel_yaw'], device=self.device, requires_grad=False).repeat(self.num_envs, 1),
+            'heading': torch.tensor(self.command_ranges['heading'], device=self.device, requires_grad=False).repeat(self.num_envs, 1),
         }
         self._update_env_command_ranges()
 

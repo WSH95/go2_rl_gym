@@ -1,6 +1,8 @@
 # 20260107
 ## v0.1.7
-Fix bug: 修复`cfg.commands.dynamic_resample_commands=False`时, 未根据环境调整指令采样范围的问题
+Fix bug: 
+1. 修复`cfg.commands.dynamic_resample_commands=False`时, 未根据环境调整指令采样范围的问题
+2. 修复`env_command_ranges`初始值问题
 ## v0.1.6
 1. 加入`go2_rem_cts`, student使用MoE结构, teacher使用普通CTS, 使用非共享权重和全goal输入
 2. 加入`move_down_by_accumulated_xy_command`选择是否通过累计速度来降低等级

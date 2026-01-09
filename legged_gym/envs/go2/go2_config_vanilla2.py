@@ -1,14 +1,14 @@
 # -*- coding: utf-8 -*-
 '''
-@File    : go2_config_vanilla.py
-@Time    : 2026/01/10 02:26:04
+@File    : go2_config_vanilla2.py
+@Time    : 2026/01/10 02:27:28
 @Author  : wty-yy
 @Version : 1.0
 @Blog    : https://wty-yy.github.io/
-@Desc    : Go2 vanilla training config
-episode length 25, resample commands 5 sec,
-open move_down_by_accumulated_xy_command, dynamic_resample_commands
-close heading_command, zero_command_curriculum, limit_vel_prob, command_range_curriculum, dynamic_sigma
+@Desc    : Go2 vanilla2 training config, same as unitree rl gym except domain randomization and rewards
+episode length 20, resample commands 10 sec,
+open heading_command
+close move_down_by_accumulated_xy_command, dynamic_resample_commands, zero_command_curriculum, limit_vel_prob, command_range_curriculum, dynamic_sigma
 '''
 import math
 from legged_gym.envs.base.legged_robot_config import LeggedRobotCfg, LeggedRobotCfgPPO, LeggedRobotCfgCTS, LeggedRobotCfgMoECTS, LeggedRobotCfgMoECTS, LeggedRobotCfgMCPCTS, LeggedRobotCfgACMoECTS, LeggedRobotCfgDualMoECTS, LeggedRobotCfgREMCTS
@@ -48,7 +48,7 @@ class GO2Cfg(LeggedRobotCfg):
         num_privileged_obs = 45 + 3 + 4 + 12 + 12 + 187  # 263
         # num_privileged_obs = 45 + 3 + 187  # 235
         # num_privileged_obs = 48  # without height measurements
-        episode_length_s = 25
+        episode_length_s = 20
 
     class domain_rand(LeggedRobotCfg.domain_rand):
         ### Robot properties ###
@@ -105,14 +105,14 @@ class GO2Cfg(LeggedRobotCfg):
         # terrain_proportions = [0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0]
         # terrain_proportions = [0.3, 0.3, 0.3, 0.0, 0.0, 0.0, 0.0, 0.0, 0.1]
         # terrain_proportions = [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 1.0]
-        move_down_by_accumulated_xy_command = True # move down the terrain curriculum based on accumulated xy command distance instead of absolute distance
+        move_down_by_accumulated_xy_command = False # move down the terrain curriculum based on accumulated xy command distance instead of absolute distance
         
     class commands(LeggedRobotCfg.commands):
         curriculum = False
         max_curriculum = 1.
         num_commands = 4 # default: lin_vel_x, lin_vel_y, ang_vel_yaw (in heading mode ang_vel_yaw is recomputed from heading error)
-        resampling_time = 5. # time before command are changed[s]
-        heading_command = False # if true: compute ang vel command from heading error
+        resampling_time = 10. # time before command are changed[s]
+        heading_command = True # if true: compute ang vel command from heading error
         # start training with zero commands and then gradually increase zero command probability
         zero_command_curriculum = None
         # zero_command_curriculum = {'start_iter': 0, 'end_iter': 1500, 'start_value': 0.0, 'end_value': 0.1}
@@ -121,7 +121,7 @@ class GO2Cfg(LeggedRobotCfg):
         limit_vel_invert_when_continuous = True # invert the limit logic when using continuous sample limit velocity commands
         limit_vel = {"lin_vel_x": [-1, 1], "lin_vel_y": [-1, 1], "ang_vel_yaw": [-1, 0, 1]} # sample vel commands from min [-1] or zero [0] or max [1] range only
         stop_heading_at_limit = True # stop heading updates when vel is limited
-        dynamic_resample_commands = True # sample commands with low bounds
+        dynamic_resample_commands = False # sample commands with low bounds
         command_range_curriculum = []
         # command_range_curriculum = [{ # list for command range curriculums at specific training iterations
         #     'iter': 20000, # training iteration at which the command ranges are updated

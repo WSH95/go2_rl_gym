@@ -426,6 +426,8 @@ class LeggedRobot(BaseTask):
         Args:
             env_ids (List[int]): Environments ids for which new commands are needed
         """
+        if len(env_ids) == 0:
+            return
         self.stop_heading[env_ids] = False
         # update command curriculum with train steps
         if len(self.cfg.commands.command_range_curriculum):
@@ -443,6 +445,7 @@ class LeggedRobot(BaseTask):
                     self._update_env_command_ranges()
                     print(f"Command range updated at iter {current_iter}: {self.command_ranges}")
         remaining_dist = torch.clip(0.625 * self.cfg.terrain.terrain_length - torch.norm(self.commands_xy_accumulation[env_ids], dim=1) * self.cfg.commands.resampling_time, 0.0)
+        self.commands_resampling_step[env_ids] = self.cfg.commands.resampling_time / self.dt
         if self.cfg.commands.dynamic_resample_commands:
             # arrive at boundary 0.625 times the width of the remaining distance
             if ((self.max_episode_length - self.episode_length_buf[env_ids]) == 0).any():
@@ -472,7 +475,6 @@ class LeggedRobot(BaseTask):
                 lower = self.env_command_ranges["ang_vel_yaw"][env_ids, 0]
                 upper = self.env_command_ranges["ang_vel_yaw"][env_ids, 1]
                 self.commands[env_ids, 2] = (upper - lower) * r + lower
-            self.commands_resampling_step[env_ids] = self.cfg.commands.resampling_time / self.dt
         else:
             self.commands[env_ids, 0] = sample_single_interval(
                 env_ids,
@@ -859,6 +861,12 @@ class LeggedRobot(BaseTask):
     def _update_env_command_ranges(self):
         """ Update environment-wise command ranges based on current command ranges and terrain type """
         if not hasattr(self, 'terrain_ids'):
+            self.env_command_ranges = {
+                'lin_vel_x': torch.tensor(self.command_ranges['lin_vel_x'], device=self.device, requires_grad=False).repeat(self.num_envs, 1),
+                'lin_vel_y': torch.tensor(self.command_ranges['lin_vel_y'], device=self.device, requires_grad=False).repeat(self.num_envs, 1),
+                'ang_vel_yaw': torch.tensor(self.command_ranges['ang_vel_yaw'], device=self.device, requires_grad=False).repeat(self.num_envs, 1),
+                'heading': torch.tensor(self.command_ranges['heading'], device=self.device, requires_grad=False).repeat(self.num_envs, 1),
+            }
             return
         for terrain_id, terrain_command_ranges in enumerate(self.cfg.commands.terrain_max_command_ranges):
             env_ids = (self.terrain_ids == terrain_id).nonzero(as_tuple=False).flatten()
@@ -1322,6 +1330,7 @@ class LeggedRobot(BaseTask):
             sigma_y = self._get_dynamic_sigma(torch.abs(self.commands[:, 1]), vmin, vmax)
         lin_vel_error_sq = torch.square(self.commands[:, :2] - self.base_lin_vel[:, :2])
         scaled_error = lin_vel_error_sq[:, 0] / sigma_x + lin_vel_error_sq[:, 1] / sigma_y
+        # print(f"{self.base_lin_vel[:, :2]=}, {lin_vel_error_sq=}")
         return torch.exp(-scaled_error)
     
     def _reward_tracking_ang_vel(self):

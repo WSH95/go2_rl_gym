@@ -1,8 +1,16 @@
+# 20260109
+## v0.1.8
+1. 加入两个配置legged_gym/envs/go2/go2_config_vanilla.py和legged_gym/envs/go2/go2_config_vanilla2.py
+    - vanilla: episode长度25, 指令采样步数5, 打开move_down_by_accumulated_xy_command, dynamic_resample_commands, 关闭heading_command, zero_command_curriculum, limit_vel_prob, command_range_curriculum, dynamic_sigma
+    - vanilla2：episode长度20, 指令采样步数10, 打开haeding_command, 关闭move_down_by_accumulated_xy_command, dynamic_resample_commands, zero_command_curriculum, limit_vel_prob, command_range_curriculum, dynamic_sigma
+2. 加入go2_config_fast_flat_move.py配置
+3. onnx支持rem-cts导出
 # 20260107
 ## v0.1.7
 Fix bug: 
 1. 修复`cfg.commands.dynamic_resample_commands=False`时, 未根据环境调整指令采样范围的问题
 2. 修复`env_command_ranges`初始值问题
+3. 修复`dynamic_resample_commands=False`时, 未更新`commands_resampling_step`问题
 ## v0.1.6
 1. 加入`go2_rem_cts`, student使用MoE结构, teacher使用普通CTS, 使用非共享权重和全goal输入
 2. 加入`move_down_by_accumulated_xy_command`选择是否通过累计速度来降低等级

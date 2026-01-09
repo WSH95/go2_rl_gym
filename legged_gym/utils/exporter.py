@@ -210,10 +210,13 @@ class _OnnxPolicyExporter(torch.nn.Module):
             
         elif hasattr(policy, "student_moe_encoder"):
             self.student_moe_encoder = copy.deepcopy(policy.student_moe_encoder)
-            self.obs_no_goal_mask = copy.deepcopy(policy.obs_no_goal_mask).cpu()
             self.history_length = policy.history.shape[1]
             self.forward = self.forward_moe_cts
             self.input_dim = self.history_length * policy.history.shape[2]
+            if hasattr(policy, "obs_no_goal_mask"):
+                self.obs_no_goal_mask = copy.deepcopy(policy.obs_no_goal_mask).cpu()
+            else:
+                self.forward = self.forward_rem_cts
         
         else:  # PPO
             self.forward = self.forward_ppo
@@ -283,6 +286,17 @@ class _OnnxPolicyExporter(torch.nn.Module):
         history_no_goal = history_3d[:, :, self.obs_no_goal_mask].reshape(x.shape[0], -1)
 
         latent, weights = self.student_moe_encoder(history, history_no_goal)
+        x = torch.cat([latent, last_obs], dim=1)
+
+        return self.actor(x), weights, latent
+
+    def forward_rem_cts(self, x):
+        x = self.normalizer(x)
+        history, obs_dim = self.flatten_obs(x)
+
+        last_obs = history[:, -obs_dim:]
+
+        latent, weights = self.student_moe_encoder(history)
         x = torch.cat([latent, last_obs], dim=1)
 
         return self.actor(x), weights, latent

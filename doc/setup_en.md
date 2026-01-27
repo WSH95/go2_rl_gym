@@ -1,20 +1,20 @@
-# Installation Guide
+# Installation and Configuration Guide
 
 ## System Requirements
 
-- **Operating System**: Recommended Ubuntu 18.04 or later  
-- **GPU**: Nvidia GPU  
-- **Driver Version**: Recommended version 525 or later  
+- **OS**: Ubuntu 18.04 or higher is recommended
+- **GPU**: Nvidia GPU
+- **Driver Version**: Version 525 or higher is recommended
 
 ---
 
-## 1. Creating a Virtual Environment
+## 1. Create Virtual Environment
 
-It is recommended to run training or deployment programs in a virtual environment. Conda is recommended for creating virtual environments. If Conda is already installed on your system, you can skip step 1.1.
+It is recommended to run training or deployment programs within a virtual environment. Conda is recommended for creating and managing virtual environments. If Conda is already installed on your system, you can skip step 1.1.
 
 ### 1.1 Download and Install MiniConda
 
-MiniConda is a lightweight distribution of Conda, suitable for creating and managing virtual environments. Use the following commands to download and install:
+MiniConda is a lightweight distribution of Conda suitable for creating and managing virtual environments. Use the following commands to download and install:
 
 ```bash
 mkdir -p ~/miniconda3
@@ -30,7 +30,7 @@ After installation, initialize Conda:
 source ~/.bashrc
 ```
 
-### 1.2 Create a New Environment
+### 1.2 Create New Environment
 
 Use the following command to create a virtual environment:
 
@@ -38,7 +38,7 @@ Use the following command to create a virtual environment:
 conda create -n unitree-rl python=3.8
 ```
 
-### 1.3 Activate the Virtual Environment
+### 1.3 Activate Virtual Environment
 
 ```bash
 conda activate unitree-rl
@@ -46,7 +46,7 @@ conda activate unitree-rl
 
 ---
 
-## 2. Installing Dependencies
+## 2. Install Dependencies
 
 ### 2.1 Install PyTorch
 
@@ -58,15 +58,15 @@ conda install pytorch==2.3.1 torchvision==0.18.1 torchaudio==2.3.1 pytorch-cuda=
 
 ### 2.2 Install Isaac Gym
 
-Isaac Gym is a rigid body simulation and training framework provided by Nvidia.
+Isaac Gym is Nvidia's rigid body simulation and training framework.
 
 #### 2.2.1 Download
 
-Download [Isaac Gym](https://developer.nvidia.com/isaac-gym) from Nvidia’s official website.
+Download [Isaac Gym](https://developer.nvidia.com/isaac-gym) from the Nvidia official website.
 
 #### 2.2.2 Install
 
-After extracting the package, navigate to the `isaacgym/python` folder and install it using the following commands:
+Unzip the file, enter the `isaacgym/python` folder, and execute the following command to install:
 
 ```bash
 cd isaacgym/python
@@ -75,18 +75,24 @@ pip install -e .
 
 #### 2.2.3 Verify Installation
 
-Run the following command. If a window opens displaying 1080 balls falling, the installation was successful:
+Run the following commands. If a window pops up showing 1080 balls falling, the installation is successful:
 
 ```bash
 cd examples
 python 1080_balls_of_solitude.py
 ```
 
-If you encounter any issues, refer to the official documentation at `isaacgym/docs/index.html`.
+If there are any issues, please refer to the official documentation in `isaacgym/docs/index.html`.
 
 ### 2.3 Install rsl_rl
 
-`rsl_rl` is a library implementing reinforcement learning algorithms.
+`rsl_rl` is a reinforcement learning algorithm library.
+
+Our repository includes `rsl_rl` with new algorithms. Clone the Git repository:
+
+```bash
+git clone https://github.com/wty-yy/go2_rl_gym.git
+```
 
 #### 2.3.1 Install
 
@@ -97,23 +103,41 @@ pip install -e .
 
 ### 2.4 Install go2_rl_gym
 
-#### 2.4.1 Download
-
-Clone the repository using Git:
-
-```bash
-git clone https://github.com/unitreerobotics/go2_rl_gym.git
-```
-
-#### 2.4.2 Install
-
-Navigate to the directory and install it:
+Enter the directory and install:
 
 ```bash
 cd go2_rl_gym
 pip install -e .
 ```
 
-### 2.5 Install unitree_cpp_deploy (Optional)
+### 2.5 Real Robot Deployment (Optional)
 
-Refer to our C++ deployment repository, which is based on unitree_rl_lab and specifically designed for deploying models trained in this repository: [unitree_cpp_deploy](https://github.com/wty-yy-mini/unitree_cpp_deploy).
+#### 2.5.1 unitree_sdk2
+
+C++ SDK. For compilation, please refer to the [official tutorial](https://github.com/unitreerobotics/unitree_sdk2?tab=readme-ov-file#environment-setup).
+
+#### 2.5.2 unitree_sdk2_python (Choose for Python Deployment)
+
+```bash
+conda create -n kaiwu python=3.8
+conda activate kaiwu
+pip3 install pytorch==2.3.1 torchvision==0.18.1 torchaudio==2.3.1 pytorch-cuda=12.1 -c pytorch -c nvidia
+
+git clone https://github.com/unitreerobotics/unitree_sdk2_python.git
+cd unitree_sdk2_python
+pip install -e .
+```
+
+#### 2.5.3 Install unitree_cpp_deploy (Choose for C++ Deployment)
+
+We use a modified C++ deployment repository based on `unitree_rl_lab`, specifically designed for deploying models trained in this repository. See [unitree_cpp_deploy](https://github.com/wty-yy-mini/unitree_cpp_deploy).
+
+### 2.6 RoboGauge Evaluation (Optional)
+
+RoboGauge is a project for evaluating quadruped robot performance via Sim2Sim in Mujoco. It performs asynchronous evaluation on the CPU during training. For specific details, refer to the [README](https://github.com/wty-yy/RoboGauge).
+
+```bash
+git clone [https://github.com/wty-yy/RoboGauge.git](https://github.com/wty-yy/RoboGauge.git)
+cd RoboGauge
+pip install -e .
+```

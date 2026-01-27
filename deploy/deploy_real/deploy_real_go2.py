@@ -1,4 +1,5 @@
-from legged_gym import LEGGED_GYM_ROOT_DIR
+from pathlib import Path
+LEGGED_GYM_ROOT_DIR = str(Path(__file__).parents[2])
 import numpy as np
 import time
 import torch
@@ -85,11 +86,13 @@ class Controller:
 
     def zero_torque_state(self):
         print("Enter zero torque state.")
-        print("Waiting for the start signal...")
+        print("Waiting for the *start* signal...")
         while self.remote_controller.button[KeyMap.start] != 1:
             create_zero_cmd(self.low_cmd)
             self.send_cmd(self.low_cmd)
             time.sleep(self.config.control_dt)
+        print("Start signal received.")
+        print("Press *select* button to exit.")
 
 
     def move_to_default_pos(self):
@@ -121,7 +124,7 @@ class Controller:
 
     def default_pos_state(self):
         print("Enter default pos state.")
-        print("Waiting for the Button A signal...")
+        print("Waiting for the *Button A* signal...")
         while self.remote_controller.button[KeyMap.A] != 1:
             for i in range(12):
                 motor_idx = self.config.joint2motor_idx[i]
@@ -162,7 +165,12 @@ class Controller:
         self.obs[33:45] = self.action
 
         obs_tensor = torch.from_numpy(self.obs).unsqueeze(0)
-        self.action = self.policy(obs_tensor).detach().numpy().squeeze()
+        results = self.policy(obs_tensor)
+        if isinstance(results, tuple):
+            self.action = results[0]
+        else:
+            self.action = results
+        self.action = self.action.detach().numpy().squeeze()
 
         target_dof_pos = self.config.default_angles + self.action * self.config.action_scale
         # target_dof_pos = self.config.default_angles

@@ -1,4 +1,5 @@
-from legged_gym import LEGGED_GYM_ROOT_DIR
+from pathlib import Path
+LEGGED_GYM_ROOT_DIR = str(Path(__file__).parents[2])
 import numpy as np
 import yaml
 

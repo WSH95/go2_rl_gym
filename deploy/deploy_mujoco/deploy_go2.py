@@ -1,3 +1,10 @@
+import sys
+from pathlib import Path
+PATH_PARENT = Path(__file__).parent
+sys.path.append(str(PATH_PARENT))
+from utils import MujocoRenderUtils
+
+import os
 import time
 import mujoco.viewer
 import mujoco
@@ -7,11 +14,9 @@ import torch
 import yaml
 import os
 import imageio
-from pathlib import Path
 from argparse import ArgumentParser
 import pygame
 from matplotlib import pyplot as plt
-
 
 def get_gravity_orientation(quaternion):
     qw = quaternion[0]
@@ -110,7 +115,7 @@ if __name__ == "__main__":
             idx_model2mj = [model_joint_names.index(joint) for joint in mujoco_joint_names]
             idx_mj2model = [mujoco_joint_names.index(joint) for joint in model_joint_names]
 
-    video_save_dir = str(Path(__file__).parent / "videos")
+    video_save_dir = str(PATH_PARENT / "videos")
     os.makedirs(video_save_dir, exist_ok=True)
 
     model_name = os.path.basename(policy_path).split('.')[0]
@@ -134,17 +139,18 @@ if __name__ == "__main__":
     # load policy
     policy = torch.jit.load(policy_path)
 
+    video_fps = 50
     if save_video:
         video_filename = f"{model_name}_{cmd_str}.mp4"
         video_path = os.path.join(video_save_dir, video_filename)
         print(f"Video recording will be saved to: {video_path}")
-        video_fps = 50
         sim_fps = 1.0 / m.opt.timestep
         frame_skip = int(sim_fps / video_fps)
         if frame_skip < 1:
             frame_skip = 1
         writer = imageio.get_writer(video_path, fps=video_fps)
         print(f"Sim FPS: {sim_fps:.2f}, Video FPS: {video_fps}, Frame Skip: {frame_skip}, Save at: {video_path}")
+    mujoco_render_utils = MujocoRenderUtils(video_fps, m.opt.timestep)
 
     if visualize_moe_weights:
         plt.ion()
@@ -153,7 +159,7 @@ if __name__ == "__main__":
         bars = None
     
     if save_moe_latent:
-        latent_save_dir = str(Path(__file__).parent / "data_latents")
+        latent_save_dir = str(PATH_PARENT / "data_latents")
         os.makedirs(latent_save_dir, exist_ok=True)
         latent_filename = f"{model_name}_{cmd_str}_latents.npy"
         latent_path = os.path.join(latent_save_dir, latent_filename)
@@ -164,9 +170,9 @@ if __name__ == "__main__":
         # set viewer.camera to follow robot
         viewer.cam.type = mujoco.mjtCamera.mjCAMERA_TRACKING
         viewer.cam.trackbodyid = 1
-        viewer.cam.distance = 3.0
-        viewer.cam.elevation = -30.0
-        viewer.cam.azimuth = 0.0
+        viewer.cam.distance = 2.0
+        viewer.cam.elevation = -20.0
+        viewer.cam.azimuth = 60.0
 
         # Close the viewer automatically after simulation_duration wall-seconds.
         start = time.time()
@@ -188,10 +194,12 @@ if __name__ == "__main__":
             # mj_step can be replaced with code that also evaluates
             # a policy and applies a control signal before stepping the physics.
             mujoco.mj_step(m, d)
+            mujoco_render_utils.update(cmd, d)
 
             if save_video and counter % frame_skip == 0:
                 try:
                     renderer.update_scene(d, camera=viewer.cam)
+                    mujoco_render_utils.update_external_rendering(renderer, ctype='renderer')
                     frame = renderer.render()
                     writer.append_data(frame)
                 except Exception as e:
@@ -249,6 +257,7 @@ if __name__ == "__main__":
                 target_dof_pos = action * action_scale + default_angles
 
             # Pick up changes to the physics state, apply perturbations, update options from GUI.
+            mujoco_render_utils.update_external_rendering(viewer, ctype='viewer')
             viewer.sync()
 
             # Rudimentary time keeping, will drift relative to wall clock.

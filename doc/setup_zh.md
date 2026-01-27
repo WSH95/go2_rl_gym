@@ -131,3 +131,11 @@ pip install -e .
 ### 2.5.3 安装 unitree_cpp_deploy（选择用C++部署）
 
 我们基于unitree_rl_lab修改的C++部署仓库，专门用于部署本仓库训练的模型 [unitree_cpp_deploy](https://github.com/wty-yy-mini/unitree_cpp_deploy)
+
+### 2.6 RoboGauge评估（可选）
+RoboGauge是一个Mujoco中通过Sim2Sim评估四足机器人性能的项目，在训练同时中异步地在cpu上进行评估，具体细节参考[README](https://github.com/wty-yy/RoboGauge)，安装方法
+```bash
+git clone https://github.com/wty-yy/RoboGauge.git
+cd RoboGauge
+pip install -e .
+```

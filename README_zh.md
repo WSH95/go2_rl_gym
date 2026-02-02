@@ -94,7 +94,7 @@ python deploy/deploy_mujoco/deploy_go2.py
 如果有xbox协议的手柄接入主机，自动切换为手柄控制，否则只会保持默认指令前进。
 
 - 替换网络模型：默认模型位于 `deploy/pre_train/go2/go2_cts_150k.pt`；自己训练模型保存于`logs/{experiment_name}/exported/policies/policy.pt`，只需替换 yaml 配置文件中 `policy_path`。
-- 替换环境地形：默认地形为 `resources/robots/go2/stairs.xml`，其他可选地形，平地 `flat.xml`，赛道 `race_track.xml`，地形使用[terrain_generator.py](resources/robots/go2/terrain_generator.py)生成，参考[unitree_mujoco/terrain_tool](https://github.com/unitreerobotics/unitree_mujoco/tree/main/terrain_tool)。
+- 替换环境地形：默认地形为 `resources/robots/go2/stairs.xml`，其他可选地形，平地 `flat.xml`，赛道 `race_track.xml`，交叉楼梯和斜坡`cross_stairs`/`cross_slope`，地形使用[windigal - mujoco_terrains](https://github.com/windigal/mujoco_terrains)生成
 
 #### 运行效果
 
@@ -157,7 +157,7 @@ python deploy_real_go2.py eth0
 - [CTS: Concurrent Teacher-Student Reinforcement Learning for Legged Locomotion](https://arxiv.org/pdf/2405.10830)
 
 贡献者：
-- [@windigal](https://github.com/windigal)：复现CTS算法，剪辑视频
+- [@windigal](https://github.com/windigal)：复现CTS算法，生成地形，剪辑视频
 - [@wertyuilife2](https://github.com/wertyuilife2)：复现CTS算法
 
 ---

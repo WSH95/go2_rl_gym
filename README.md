@@ -94,7 +94,7 @@ python deploy/deploy_mujoco/deploy_go2.py
 Connect an Xbox-compatible gamepad to enable teleoperation; otherwise, the agent keeps a default forward command.
 
 - **Swap the policy**: The default checkpoint is `deploy/pre_train/go2/go2_cts_150k.pt`. Replace `policy_path` in the YAML config with your own `logs/{experiment_name}/exported/policies/policy.pt`.
-- **Swap terrains**: Default terrain is `resources/robots/go2/stairs.xml`. Alternatives include `flat.xml` and `race_track.xml`. Generate new terrains with [terrain_generator.py](resources/robots/go2/terrain_generator.py) (see also [unitree_mujoco/terrain_tool](https://github.com/unitreerobotics/unitree_mujoco/tree/main/terrain_tool)).
+- **Swap terrains**: Default terrain is `resources/robots/go2/stairs.xml`. Alternatives include `flat.xml`, `race_track.xml`, `cross_stairs.xml`, and `cross_slope.xml`. Generate new terrains with [windigal - mujoco_terrains](https://github.com/windigal/mujoco_terrains)
 
 #### Results
 
@@ -159,7 +159,7 @@ Related publications implemented in this repo:
 - [CTS: Concurrent Teacher-Student Reinforcement Learning for Legged Locomotion](https://arxiv.org/pdf/2405.10830)
 
 Contributors:
-- [@windigal](https://github.com/windigal): CTS algorithm reproduction, video editing
+- [@windigal](https://github.com/windigal): CTS algorithm reproduction, terrain generation, video editing
 - [@wertyuilife2](https://github.com/wertyuilife2): CTS algorithm reproduction
 
 ---

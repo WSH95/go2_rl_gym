@@ -53,6 +53,21 @@ python legged_gym/scripts/train.py --task=xxx
 
 ---
 
+#### Model Evaluation
+
+The trained model above was evaluated using the [RoboGauge](https://github.com/wty-yy/RoboGauge) framework via Sim2Sim. The models in the table below are the best models after 150k training steps.
+
+| Model | Score | Tracking  | Safety  | Quality  | Level | Download |
+| --- | --- | --- | --- | --- | --- | --- |
+| go2_moe_cts | **0.6819** | **0.6714** | **0.7794** | **0.7748** | **7.85** | [ckpt](https://drive.google.com/drive/folders/1aoXUxw-pGK1MbyzQ4IJzlA_tW8zrWP3Y?usp=drive_link) |
+| go2_moe_ng_cts | 0.6670 | 0.6552 | 0.7651 | 0.7613 | 7.67 | [ckpt](https://drive.google.com/drive/folders/1Rr89ZS0QJT-o-5LXsNqCWJdLGweqmN4Q?usp=drive_link) |
+| go2_ac_moe_cts | 0.6652 | 0.6527 | 0.7615 | 0.7552 | 7.57 | [ckpt](https://drive.google.com/file/d/1CDLsaR4XR3oG09ZHQ5u3lrJLfwyH2jz2/view?usp=drive_link) |
+| go2_mcp_cts | 0.6545 | 0.6440 | 0.7531 | 0.7476 | 7.48 | [ckpt](https://drive.google.com/drive/folders/1fd9cDVhV1dY6hcxuSZq2mcvFUp6V5Zfl?usp=drive_link) |
+| [HIM](https://github.com/InternRobotics/HIMLoco) | 0.5209 | 0.5200 | 0.6200 | 0.6100 | 5.78 | [ckpt](https://drive.google.com/file/d/1remJbGoTorqnArsz8Z1ewY4TVobss4Fb/view?usp=drive_link) |
+| [DreamWaQ](https://arxiv.org/abs/2301.10602) | 0.4832 | 0.4800 | 0.5800 | 0.5700 | 5.26 | [ckpt](https://drive.google.com/file/d/19BEBeiQqjHcPgGrN3AX6D7Yefs_8eswL/view?usp=drive_link) |
+
+> In the downloaded ckpt, *.pt files are used for [Python deployment](#41-python-deployment), and *.onnx files are used for [C++ deployment](#42-c-deployment).
+
 ### 2. Play
 
 Visualize policies inside Gym with:
@@ -106,7 +121,7 @@ Connect an Xbox-compatible gamepad to enable teleoperation; otherwise, the agent
 
 ### 4. Sim2Real
 
-#### 4.1 Python Deployment (requires [unitree_sdk2_python](https://github.com/unitreerobotics/unitree_sdk2_python))
+#### 4.1 Python Deployment
 
 ```bash
 # Onboard Jetson: pick Python by JetPack version
@@ -132,7 +147,7 @@ python deploy_real_go2.py eth0
 
 Press `start` to stand and `A` to engage the controller.
 
-#### 4.2 C++ Deployment (requires unitree_cpp_deploy)
+#### 4.2 C++ Deployment
 
 Follow the usage described in [unitree_cpp_deploy](https://github.com/wty-yy-mini/unitree_cpp_deploy).
 

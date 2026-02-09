@@ -26,8 +26,7 @@ BASE_COLUMNS = [
 
 def fast_read(event_file_path, tag_names):
     loader = event_file_loader.RawEventFileLoader(event_file_path)
-    steps = []
-    values = []
+    tag_data = defaultdict(dict)
 
     for raw_event in loader.Load():
         event = event_pb2.Event.FromString(raw_event)
@@ -35,10 +34,9 @@ def fast_read(event_file_path, tag_names):
         if event.HasField('summary'):
             for value in event.summary.value:
                 if value.tag in tag_names:
-                    steps.append(event.step)
-                    values.append(value.simple_value)
+                    tag_data[event.step][value.tag] = value.simple_value
                     
-    return pd.DataFrame({'step': steps, 'value': values})
+    return pd.DataFrame(tag_data).T
 
 class Collector:
     def __init__(self, log_dirs):
@@ -64,7 +62,10 @@ class Collector:
         else:
             start_time = time.time()
             print(f"Start reading tensorboard events at {time.ctime(start_time)}")
-            self.tb_df = fast_read(str(self.log_dirs.glob("events.out.tfevents.*").__next__()), ['Terrain/terrain_level_all', 'Episode/terrain_level_all'])
+            self.tb_df = fast_read(str(self.log_dirs.glob("events.out.tfevents.*").__next__()), [
+                'Terrain/terrain_level_all', 'Episode/terrain_level_all',
+                'RoboGauge/benchmark'
+            ])
             print(f"Finished reading tensorboard events in {time.time() - start_time:.2f} seconds.")
             self.tb_df.to_csv(self.output_tb, index=False)
             print(f"Saved tensorboard data to {self.output_tb}")
@@ -118,4 +119,4 @@ if __name__ == '__main__':
     parser.add_argument("--log-dirs")
     args = parser.parse_args()
     collector = Collector(args.log_dirs)
-    collector.collect()
+    # collector.collect()

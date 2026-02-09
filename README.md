@@ -149,7 +149,7 @@ Press `start` to stand and `A` to engage the controller.
 
 #### 4.2 C++ Deployment
 
-Follow the usage described in [unitree_cpp_deploy](https://github.com/wty-yy-mini/unitree_cpp_deploy).
+Follow the usage described in [unitree_cpp_deploy](https://github.com/wty-yy/unitree_cpp_deploy).
 
 #### Demonstration
 

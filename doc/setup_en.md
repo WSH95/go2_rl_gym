@@ -130,7 +130,7 @@ pip install -e .
 
 #### 2.5.3 Install unitree_cpp_deploy (Choose for C++ Deployment)
 
-We use a modified C++ deployment repository based on `unitree_rl_lab`, specifically designed for deploying models trained in this repository. See [unitree_cpp_deploy](https://github.com/wty-yy-mini/unitree_cpp_deploy).
+We use a modified C++ deployment repository based on `unitree_rl_lab`, specifically designed for deploying models trained in this repository. See [unitree_cpp_deploy](https://github.com/wty-yy/unitree_cpp_deploy).
 
 ### 2.6 RoboGauge Evaluation (Optional)
 

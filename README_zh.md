@@ -149,7 +149,7 @@ python deploy_real_go2.py eth0
 
 #### 4.2 C++实物部署
 
-参考[unitree_cpp_deploy](https://github.com/wty-yy-mini/unitree_cpp_deploy)使用说明。
+参考[unitree_cpp_deploy](https://github.com/wty-yy/unitree_cpp_deploy)使用说明。
 
 #### 运行效果
 

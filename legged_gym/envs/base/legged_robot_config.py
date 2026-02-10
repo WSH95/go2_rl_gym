@@ -306,6 +306,14 @@ class LeggedRobotCfgPPO(BaseConfig):
         enabled = False
         port = 9973
 
+class LeggedRobotCfgMoETeacherPPO(LeggedRobotCfgPPO):
+    class policy(LeggedRobotCfgPPO.policy):
+        expert_num = 8
+
+    class runner(LeggedRobotCfgPPO.runner):
+        policy_class_name = 'ActorCriticMoETeacher'
+        algorithm_class_name = 'MoETeacher'
+
 class LeggedRobotCfgCTS(BaseConfig):
     seed = 0
     runner_class_name = "OnPolicyRunnerCTS"

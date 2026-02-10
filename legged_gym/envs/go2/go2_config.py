@@ -1,5 +1,5 @@
 import math
-from legged_gym.envs.base.legged_robot_config import LeggedRobotCfg, LeggedRobotCfgPPO, LeggedRobotCfgCTS, LeggedRobotCfgMoENGCTS, LeggedRobotCfgMoENGCTS, LeggedRobotCfgMCPCTS, LeggedRobotCfgACMoECTS, LeggedRobotCfgDualMoECTS, LeggedRobotCfgMoECTS
+from legged_gym.envs.base.legged_robot_config import LeggedRobotCfg, LeggedRobotCfgPPO, LeggedRobotCfgCTS, LeggedRobotCfgMoENGCTS, LeggedRobotCfgMoENGCTS, LeggedRobotCfgMCPCTS, LeggedRobotCfgACMoECTS, LeggedRobotCfgDualMoECTS, LeggedRobotCfgMoECTS, LeggedRobotCfgMoETeacherPPO
 
 class GO2Cfg(LeggedRobotCfg):
     class init_state(LeggedRobotCfg.init_state):
@@ -280,5 +280,15 @@ class GO2CfgMoECTS(LeggedRobotCfgMoECTS):
     class runner(LeggedRobotCfgMoECTS.runner):
         run_name = ''
         experiment_name = 'go2_moe_cts'
+        max_iterations = 150000
+        save_interval = 500
+
+class GO2CfgMoETeacher(LeggedRobotCfgMoETeacherPPO):
+    class policy(LeggedRobotCfgMoETeacherPPO.policy):
+        expert_num = 8
+
+    class runner(LeggedRobotCfgMoETeacherPPO.runner):
+        run_name = ''
+        experiment_name = 'go2_moe_teacher'
         max_iterations = 150000
         save_interval = 500

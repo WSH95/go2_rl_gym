@@ -39,8 +39,8 @@ from pathlib import Path
 from torch.utils.tensorboard import SummaryWriter
 import torch
 
-from rsl_rl.algorithms import PPO
-from rsl_rl.modules import ActorCritic, ActorCriticRecurrent
+from rsl_rl.algorithms import PPO, MoETeacher
+from rsl_rl.modules import ActorCritic, ActorCriticRecurrent, ActorCriticMoETeacher
 from rsl_rl.env import VecEnv
 from legged_gym.utils.helpers import class_to_dict
 from legged_gym.utils.exporter import export_policy_as_jit

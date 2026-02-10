@@ -3,9 +3,9 @@ policy_path: "{LEGGED_GYM_ROOT_DIR}/deploy/pre_train/go2/go2_moe_cts_137000_0.63
 
 # xml_path: "{LEGGED_GYM_ROOT_DIR}/resources/robots/go2/flat.xml"
 # xml_path: "{LEGGED_GYM_ROOT_DIR}/resources/robots/go2/race_track.xml"
-xml_path: "{LEGGED_GYM_ROOT_DIR}/resources/robots/go2/stairs.xml"
+# xml_path: "{LEGGED_GYM_ROOT_DIR}/resources/robots/go2/stairs.xml"
 # xml_path: "{LEGGED_GYM_ROOT_DIR}/resources/robots/go2/cross_slope.xml"
-# xml_path: "{LEGGED_GYM_ROOT_DIR}/resources/robots/go2/cross_stairs.xml"
+xml_path: "{LEGGED_GYM_ROOT_DIR}/resources/robots/go2/cross_stairs.xml"
 
 # Total simulation time
 simulation_duration: 60000000.0

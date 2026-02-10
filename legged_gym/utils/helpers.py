@@ -143,6 +143,7 @@ def get_args():
 
         {"name": "--robogauge", "action": "store_true", "default": False, "help": "Enable robogauge evaluation interface."},
         {"name": "--robogauge_port", "type": int, "default": 9973, "help": "Port for robogauge evaluation interface."},
+        {"name": "--use_teacher", "action": "store_true", "default": False, "help": "Use teacher policy for CTS testing in play mode."},
     ]
     # parse arguments
     args = gymutil.parse_arguments(

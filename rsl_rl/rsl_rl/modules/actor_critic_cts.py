@@ -165,6 +165,12 @@ class ActorCriticCTS(nn.Module):
         x = torch.cat([latent, obs], dim=1)
         actions_mean = self.actor(x)
         return actions_mean
+    
+    def act_inference_teacher(self, obs, privileged_obs):
+        latent = self.teacher_encoder(privileged_obs)
+        x = torch.cat([latent, obs], dim=1)
+        actions_mean = self.actor(x)
+        return actions_mean
 
     def evaluate(self, privileged_obs, history, is_teacher, **kwargs):
         if is_teacher:

@@ -34,10 +34,11 @@ def play(args):
     # prepare environment
     env, _ = task_registry.make_env(name=args.task, args=args, env_cfg=env_cfg)
     obs = env.get_observations()
+    privileged_obs = env.get_privileged_observations()
     # load policy
     train_cfg.runner.resume = True
     runner, train_cfg = task_registry.make_alg_runner(env=env, name=args.task, args=args, train_cfg=train_cfg)
-    policy = runner.get_inference_policy(device=env.device)
+    policy = runner.get_inference_policy(device=env.device, use_teacher=args.use_teacher)
     
     # export policy as a jit module (used to run it from C++)
     if EXPORT_POLICY:
@@ -52,14 +53,19 @@ def play(args):
         print('Exported policy as jit script / onnx to: ', path)
 
     for i in range(10*int(env.max_episode_length)):
-        actions = policy(obs.detach())
+        if args.use_teacher:
+            if privileged_obs is None:
+                raise RuntimeError("Teacher inference requires privileged observations, but got None.")
+            actions = policy(obs.detach(), privileged_obs.detach())
+        else:
+            actions = policy(obs.detach())
 
         if FIX_COMMAND:
             env.commands[:, 0] = 1.0
             env.commands[:, 1] = 0.0
             env.commands[:, 2] = 0.0
 
-        obs, _, rews, dones, infos = env.step(actions.detach())
+        obs, privileged_obs, rews, dones, infos = env.step(actions.detach())
 
 if __name__ == '__main__':
     EXPORT_POLICY = True

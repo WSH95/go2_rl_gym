@@ -348,8 +348,12 @@ class OnPolicyRunnerCTS:
         self.current_learning_iteration = loaded_dict['iter']
         return loaded_dict['infos']
 
-    def get_inference_policy(self, device=None):
+    def get_inference_policy(self, device=None, use_teacher=False):
         self.alg.model.eval() # switch to evaluation mode (dropout for example)
         if device is not None:
             self.alg.model.to(device)
+        if use_teacher:
+            if not hasattr(self.alg.model, "act_inference_teacher"):
+                raise AttributeError(f"{self.alg.model.__class__.__name__} does not implement act_inference_teacher")
+            return self.alg.model.act_inference_teacher
         return self.alg.model.act_inference

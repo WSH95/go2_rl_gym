@@ -144,6 +144,8 @@ def get_args():
         {"name": "--robogauge", "action": "store_true", "default": False, "help": "Enable robogauge evaluation interface."},
         {"name": "--robogauge_port", "type": int, "default": 9973, "help": "Port for robogauge evaluation interface."},
         {"name": "--use_teacher", "action": "store_true", "default": False, "help": "Use teacher policy for CTS testing in play mode."},
+        {"name": "--use_jit", "action": "store_true", "default": False, "help": "Use exported JIT policy for play inference."},
+        {"name": "--jit_path", "type": str, "default": None, "help": "Path to exported JIT policy file. If not set, auto-resolve from logs."},
     ]
     # parse arguments
     args = gymutil.parse_arguments(

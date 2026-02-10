@@ -4,6 +4,7 @@ from isaacgym import gymapi
 from isaacgym import gymutil
 import numpy as np
 import torch
+import time
 
 # Base class for RL tasks
 class BaseTask():
@@ -58,6 +59,7 @@ class BaseTask():
         # todo: read from config
         self.enable_viewer_sync = True
         self.viewer = None
+        self.last_frame_time: float = 0.0
 
         # if running with a viewer, set up keyboard shortcuts and camera
         if self.headless == False:
@@ -68,6 +70,25 @@ class BaseTask():
                 self.viewer, gymapi.KEY_ESCAPE, "QUIT")
             self.gym.subscribe_viewer_keyboard_event(
                 self.viewer, gymapi.KEY_V, "toggle_viewer_sync")
+            self.gym.subscribe_viewer_keyboard_event(
+                self.viewer, gymapi.KEY_F, "free_cam")
+            for i in range(9):
+                self.gym.subscribe_viewer_keyboard_event(
+                    self.viewer, getattr(gymapi, "KEY_" + str(i)), "lookat" + str(i))
+            self.gym.subscribe_viewer_keyboard_event(
+                self.viewer, gymapi.KEY_LEFT_BRACKET, "prev_id")
+            self.gym.subscribe_viewer_keyboard_event(
+                self.viewer, gymapi.KEY_RIGHT_BRACKET, "next_id")
+            self.gym.subscribe_viewer_keyboard_event(
+                self.viewer, gymapi.KEY_SPACE, "pause")
+        self.free_cam = False
+        self.lookat_id = 0
+        if hasattr(cfg, "viewer") and hasattr(cfg.viewer, "pos") and hasattr(cfg.viewer, "lookat"):
+            viewer_pos = torch.tensor(cfg.viewer.pos, dtype=torch.float, device=self.device)
+            viewer_lookat = torch.tensor(cfg.viewer.lookat, dtype=torch.float, device=self.device)
+            self.lookat_vec = viewer_pos - viewer_lookat
+        else:
+            self.lookat_vec = torch.tensor([0.0, 2.0, 1.0], dtype=torch.float, device=self.device)
 
     def get_observations(self):
         return self.obs_buf
@@ -88,11 +109,23 @@ class BaseTask():
     def step(self, actions):
         raise NotImplementedError
 
+    def lookat(self, i):
+        if not hasattr(self, "root_states") or not hasattr(self, "set_camera") or self.num_envs <= 0:
+            return
+        i = int(i) % self.num_envs
+        look_at_pos = self.root_states[i, :3].clone()
+        cam_pos = look_at_pos + self.lookat_vec
+        self.set_camera(cam_pos, look_at_pos)
+
     def render(self, sync_frame_time=True):
         if self.viewer:
             # check for window closed
             if self.gym.query_viewer_has_closed(self.viewer):
                 sys.exit()
+
+            can_track_robot = hasattr(self, "root_states") and hasattr(self, "set_camera") and self.num_envs > 0
+            if can_track_robot:
+                self.lookat(self.lookat_id)
 
             # check for keyboard events
             for evt in self.gym.query_viewer_action_events(self.viewer):
@@ -101,15 +134,56 @@ class BaseTask():
                 elif evt.action == "toggle_viewer_sync" and evt.value > 0:
                     self.enable_viewer_sync = not self.enable_viewer_sync
 
+                if not self.free_cam:
+                    for i in range(min(9, self.num_envs)):
+                        if evt.action == "lookat" + str(i) and evt.value > 0:
+                            self.lookat(i)
+                            self.lookat_id = i
+                    if can_track_robot and evt.action == "prev_id" and evt.value > 0:
+                        self.lookat_id = (self.lookat_id - 1) % self.num_envs
+                        self.lookat(self.lookat_id)
+                    elif can_track_robot and evt.action == "next_id" and evt.value > 0:
+                        self.lookat_id = (self.lookat_id + 1) % self.num_envs
+                        self.lookat(self.lookat_id)
+
+                if evt.action == "free_cam" and evt.value > 0:
+                    self.free_cam = not self.free_cam
+                    if self.free_cam:
+                        self.set_camera(self.cfg.viewer.pos, self.cfg.viewer.lookat)
+
+                if evt.action == "pause" and evt.value > 0:
+                    self.pause = True
+                    while self.pause:
+                        time.sleep(0.1)
+                        self.gym.draw_viewer(self.viewer, self.sim, True)
+                        for evt in self.gym.query_viewer_action_events(self.viewer):
+                            if evt.action == "pause" and evt.value > 0:
+                                self.pause = False
+                        if self.gym.query_viewer_has_closed(self.viewer):
+                            sys.exit()
+
             # fetch results
             if self.device != 'cpu':
                 self.gym.fetch_results(self.sim, True)
 
+            self.gym.poll_viewer_events(self.viewer)
             # step graphics
             if self.enable_viewer_sync:
                 self.gym.step_graphics(self.sim)
                 self.gym.draw_viewer(self.viewer, self.sim, True)
                 if sync_frame_time:
                     self.gym.sync_frame_time(self.sim)
+
+                    now = time.time()
+                    delta = now - self.last_frame_time
+                    if delta < self.dt:
+                        time.sleep(self.dt - delta)
+                    self.last_frame_time = time.time()
             else:
                 self.gym.poll_viewer_events(self.viewer)
+
+            if not self.free_cam:
+                p = self.gym.get_viewer_camera_transform(self.viewer, None).p
+                cam_trans = torch.tensor([p.x, p.y, p.z], requires_grad=False, device=self.device)
+                look_at_pos = self.root_states[self.lookat_id, :3].clone()
+                self.lookat_vec = cam_trans - look_at_pos

@@ -57,14 +57,14 @@ python legged_gym/scripts/train.py --task=xxx
 
 使用[RoboGauge](https://github.com/wty-yy/RoboGauge)框架通过Sim2Sim评估上述训练模型，下表中模型为150k训练步中的最优模型
 
-| Model | Score | Tracking  | Safety  | Quality  | Level | Download |
+| Model | Score | Tracking | Safety | Quality | Level | Download |
 | --- | --- | --- | --- | --- | --- | --- |
-| go2_moe_cts | **0.6819** | **0.6714** | **0.7794** | **0.7748** | **7.85** | [ckpt](https://drive.google.com/drive/folders/1aoXUxw-pGK1MbyzQ4IJzlA_tW8zrWP3Y?usp=drive_link) |
-| go2_moe_ng_cts | 0.6670 | 0.6552 | 0.7651 | 0.7613 | 7.67 | [ckpt](https://drive.google.com/drive/folders/1Rr89ZS0QJT-o-5LXsNqCWJdLGweqmN4Q?usp=drive_link) |
-| go2_ac_moe_cts | 0.6652 | 0.6527 | 0.7615 | 0.7552 | 7.57 | [ckpt](https://drive.google.com/file/d/1CDLsaR4XR3oG09ZHQ5u3lrJLfwyH2jz2/view?usp=drive_link) |
-| go2_mcp_cts | 0.6545 | 0.6440 | 0.7531 | 0.7476 | 7.48 | [ckpt](https://drive.google.com/drive/folders/1fd9cDVhV1dY6hcxuSZq2mcvFUp6V5Zfl?usp=drive_link) |
-| [HIM](https://github.com/InternRobotics/HIMLoco) | 0.5209 | 0.5200 | 0.6200 | 0.6100 | 5.78 | [ckpt](https://drive.google.com/file/d/1remJbGoTorqnArsz8Z1ewY4TVobss4Fb/view?usp=drive_link) |
-| [DreamWaQ](https://arxiv.org/abs/2301.10602) | 0.4832 | 0.4800 | 0.5800 | 0.5700 | 5.26 | [ckpt](https://drive.google.com/file/d/19BEBeiQqjHcPgGrN3AX6D7Yefs_8eswL/view?usp=drive_link) |
+| go2_moe_cts (Ours) | **0.6739** | **0.6647** | **0.7776** | **0.7739** | **7.85** | [ckpt](https://drive.google.com/drive/folders/1aoXUxw-pGK1MbyzQ4IJzlA_tW8zrWP3Y?usp=drive_link) |
+| go2_ac_moe_cts | 0.6541 | 0.6425 | 0.7558 | 0.7504 | 7.52 | [ckpt](https://drive.google.com/file/d/1CDLsaR4XR3oG09ZHQ5u3lrJLfwyH2jz2/view?usp=drive_link) |
+| go2_moe_ng_cts | 0.6537 | 0.6423 | 0.7554 | 0.7525 | 7.56 | [ckpt](https://drive.google.com/drive/folders/1Rr89ZS0QJT-o-5LXsNqCWJdLGweqmN4Q?usp=drive_link) |
+| go2_mcp_cts | 0.6423 | 0.6323 | 0.7464 | 0.7412 | 7.41 | [ckpt](https://drive.google.com/drive/folders/1fd9cDVhV1dY6hcxuSZq2mcvFUp6V5Zfl?usp=drive_link) |
+| [HIM](https://github.com/InternRobotics/HIMLoco) | 0.5401 | 0.5389 | 0.6412 | 0.6391 | 6.19 | [ckpt](https://drive.google.com/file/d/1remJbGoTorqnArsz8Z1ewY4TVobss4Fb/view?usp=drive_link) |
+| [DreamWaQ](https://arxiv.org/abs/2301.10602) | 0.5032 | 0.5010 | 0.6085 | 0.6032 | 5.74 | [ckpt](https://drive.google.com/file/d/19BEBeiQqjHcPgGrN3AX6D7Yefs_8eswL/view?usp=drive_link) |
 
 > 下载的ckpt中*.pt用于[py部署](#41-python实物部署)，*.onnx用于[cpp部署](#42-c实物部署)
 
